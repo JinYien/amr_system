@@ -1,0 +1,22 @@
+amr_intersection:
+  topics:
+    lidar_subscriber: "/robot/lidar"
+    intersection_publisher: "/detection/intersection"
+
+  geometry:
+    safety_margin: 0.05 # m
+    min_open_depth: 1.0 # m
+
+  sectors:
+    front_min: -50.0 # deg
+    front_max: 50.0 # deg
+    left_min: 60.0 # deg
+    left_max: 120.0 # deg
+    right_min: -120.0 # deg
+    right_max: -60.0 # deg
+
+  scan:
+    max_skip_beams: 1
+
+  filter:
+    debounce_time: 0.1 # s

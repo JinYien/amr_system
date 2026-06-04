@@ -1,0 +1,22 @@
+interface:
+  topics:
+    command_publisher: "/command/joystick"
+    control_publisher: "/robot/control"
+    state_subscriber: "/robot/state"
+
+  rates:
+    command_publish: 20 # Hz
+
+  http:
+    host: "0.0.0.0"
+    port: 8080
+
+  limits:
+    max_linear_velocity: 1.0 # m/s
+    max_angular_velocity: 3.0 # rad/s
+
+  vocabulary:
+    modes: ["manual", "auto"]
+    authorities: ["", "user", "robot", "shared"]
+    middle_modes: ["", "nudge", "pulse"]
+    middle_actions: ["", "left", "right"]

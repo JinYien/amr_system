@@ -1,0 +1,1 @@
+Detection[] detections   # 検出物体の配列

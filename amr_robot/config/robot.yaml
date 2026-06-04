@@ -1,0 +1,9 @@
+amr_robot:
+  wheel:
+    radius: 0.108 # m
+    track: 0.42 # m
+
+  footprint:
+    frame: "base_link"
+    length: 0.48 # m
+    width: 0.48 # m
