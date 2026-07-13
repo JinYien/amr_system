@@ -1,0 +1,128 @@
+topics:
+  lidar_subscriber: "/livox/lidar"
+  imu_subscriber: "/livox/imu"
+  odometry_publisher: "/fastlio/odometry"
+  path_publisher: "/fastlio/path"
+  cloud_publisher: "/fastlio/cloud_registered"
+  body_cloud_publisher: "/fastlio/cloud_registered_body"
+  effect_cloud_publisher: "/fastlio/cloud_effected"
+  map_cloud_publisher: "/fastlio/laser_map"
+
+publish:
+  path: false
+  cloud: true
+  dense_cloud: true
+  body_cloud: true
+  effect_cloud: false
+  map_cloud: false
+
+lidar:
+  scan_line: 4
+  blind_distance: 0.2 # m
+  point_skip: 1
+  feature_extract: false
+
+imu:
+  accel_covariance: 0.3
+  gyro_covariance: 0.2
+  accel_bias_covariance: 0.0001
+  gyro_bias_covariance: 0.0001
+  time_sync: false
+  time_offset_lidar_to_imu: 0.0 # s
+
+mapping:
+  max_iteration: 4
+  scan_voxel_size: 0.15 # m
+  map_voxel_size: 0.15 # m
+  map_cube_length: 1000.0 # m
+  detect_range: 5.0 # m
+  extrinsic_estimate: false
+  extrinsic_translation: [-0.011, -0.02329, 0.04412] # m
+  extrinsic_rotation: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+logging:
+  runtime_log: false
+  log_path: "log"
+  pcd_save: false
+  pcd_save_interval: -1
+  pcd_path: "pcd"
+
+# ---------------------------------------------------------------------------
+# topics
+#   lidar_subscriber        : point cloud input from the Livox driver
+#   imu_subscriber          : IMU input from the Livox driver
+#   odometry_publisher      : estimated pose (camera_init -> body)
+#   path_publisher          : trajectory history for visualization
+#   cloud_publisher         : deskewed scan in the world frame
+#   body_cloud_publisher    : deskewed scan in the IMU body frame
+#   effect_cloud_publisher  : points that matched the map in the last update
+#   map_cloud_publisher     : accumulated map cloud
+#
+# publish
+#   disabled outputs are not created, and enabled outputs are only
+#   processed while something is subscribed to them
+#   path         : publish the trajectory on path_publisher
+#   cloud        : publish the world frame scan on cloud_publisher
+#   dense_cloud  : publish the full scan instead of the downsampled one
+#   body_cloud   : publish the body frame scan on body_cloud_publisher
+#   effect_cloud : publish the matched points on effect_cloud_publisher
+#   map_cloud    : publish the map cloud on map_cloud_publisher
+#
+# lidar
+#   the input is always the Livox CustomMsg from the Livox driver
+#   scan_line       : number of laser lines of the device, must match the device
+#   blind_distance  : points closer than this are dropped; increase to remove
+#                     more returns from the robot body, decrease to keep
+#                     close obstacles
+#   point_skip      : keep one point out of every point_skip points; increase
+#                     for less CPU with a sparser scan, decrease for a denser
+#                     scan at more CPU
+#   feature_extract : extract plane and edge features instead of using raw
+#                     points; usually false for solid state lidars
+#
+# imu
+#   accel_covariance          : accelerometer noise; increase to trust the
+#                               accelerometer less, decrease to trust it more
+#   gyro_covariance           : gyroscope noise; increase to trust the
+#                               gyroscope less, decrease to trust it more
+#   accel_bias_covariance     : accelerometer bias drift; increase if the bias
+#                               wanders quickly, decrease for a stable IMU
+#   gyro_bias_covariance      : gyroscope bias drift; same trade off
+#   time_sync                 : software sync of lidar and IMU timestamps,
+#                               only when hardware sync is impossible
+#   time_offset_lidar_to_imu  : known constant offset between the two clocks
+#
+# mapping
+#   max_iteration         : Kalman filter iterations per update; increase for
+#                           more accuracy at more CPU, decrease for less CPU
+#   scan_voxel_size       : downsampling of each new scan; increase for less
+#                           CPU with a coarser scan, decrease for more detail.
+#                           0.15 because the corridors are only ~1.0 m wide:
+#                           the 0.5 default is an outdoor setting that left a
+#                           handful of points per wall patch, too few to
+#                           constrain rotation, so the pose drifted exactly at
+#                           the U-turns while straight legs tracked fine; CPU
+#                           stays low because max_range is 5 m so clouds are
+#                           small. Raise back toward 0.4 only outdoors
+#   map_voxel_size        : downsampling of the map; increase for a lighter
+#                           map that matches faster, decrease for more detail;
+#                           kept equal to scan_voxel_size, same indoor reason
+#   map_cube_length       : side length of the local map region; increase to
+#                           keep more surroundings in memory, decrease to
+#                           bound memory in large areas
+#   detect_range          : device detection range, the local map moves when
+#                           the pose gets within 1.5 x detect_range of the map
+#                           edge; keep near the real device range
+#   extrinsic_estimate    : refine the lidar to IMU extrinsic online; disable
+#                           when the mounting is precisely known
+#   extrinsic_translation : lidar position in the IMU frame
+#   extrinsic_rotation    : lidar orientation in the IMU frame, row major
+#
+# logging
+#   runtime_log       : write timing statistics to the log folder on shutdown
+#   log_path          : folder inside the package for the runtime and debug logs
+#   pcd_save          : accumulate the map and save it as a pcd file on shutdown
+#   pcd_save_interval : lidar frames per pcd file, -1 for a single file
+#   pcd_path          : folder inside the package for the saved pcd files
+#                       (map.pcd from the map_save service, scans.pcd on shutdown)
+# ---------------------------------------------------------------------------

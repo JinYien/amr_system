@@ -1,0 +1,91 @@
+topics:
+  telemetry_publisher: "/teensy/telemetry"
+  drive_command_subscriber: "/command/drive"
+  handle_command_subscriber: "/command/handle"
+
+serial:
+  usb_id: "VID:PID=16C0:0483"
+  baudrate: 115200
+  read_timeout: 0.01 # s
+  boot_delay: 1.0 # s
+  motor_setup_delay: 0.5 # s
+
+rates:
+  serial_read: 1000 # Hz
+  drive_command: 100 # Hz
+  handle_command: 50 # Hz
+
+safety:
+  command_timeout: 0.5 # s
+
+motor:
+  left:
+    p_gain: 0.0810
+    i_gain: 0.8005
+    d_gain: 0.0
+  right:
+    p_gain: 0.0810
+    i_gain: 0.8005
+    d_gain: 0.0
+  middle:
+    torque_limit: 1.0 # Nm
+    pulse:
+      torque: 1.5 # Nm
+      hold_time: 0.05 # s
+      sequence: [0.0, 1.0, -1.0, 1.0, -1.0, 0.0]
+    nudge:
+      torque: 1.5 # Nm
+      hold_time: 0.10 # s
+
+# ---------------------------------------------------------------------------
+# topics
+#   telemetry_publisher       : sensor readings from the Teensy board
+#   drive_command_subscriber  : wheel velocity commands input
+#   handle_command_subscriber : handle motor commands input
+#
+# serial
+#   usb_id            : USB identifier used to find the Teensy port
+#   baudrate          : serial connection speed, must match the Teensy firmware
+#   read_timeout      : wait limit for one serial read; increase to tolerate a
+#                       slow stream but block the read loop longer, decrease to
+#                       return faster with possibly incomplete packets
+#   boot_delay        : wait after opening the port before talking to the
+#                       board; increase if the board misses the first commands,
+#                       decrease for a faster startup
+#   motor_setup_delay : wait after sending each motor PID setup; increase if
+#                       gains are not applied reliably, decrease for a faster
+#                       startup
+#
+# rates
+#   serial_read    : telemetry polling rate; increase to lose fewer packets at
+#                    more CPU cost, decrease to save CPU but risk the serial
+#                    buffer overflowing
+#   drive_command  : wheel command send rate; increase for smoother velocity
+#                    updates at more serial traffic, decrease to lighten the
+#                    link but respond slower
+#   handle_command : handle command send rate; same trade off as drive_command
+#
+# safety
+#   command_timeout : the wheels stop when no drive command arrives for this
+#                     long; increase to tolerate short sender hiccups,
+#                     decrease to stop faster when the sender dies
+#
+# motor
+#   left / right
+#     p_gain : wheel speed error response; increase for stronger correction
+#              but oscillation risk, decrease for softer slower tracking
+#     i_gain : accumulated error response; increase to remove steady state
+#              error faster but overshoot more, decrease for less overshoot
+#     d_gain : error change damping; increase to damp oscillation but amplify
+#              sensor noise, decrease for less noise sensitivity
+#   middle
+#     torque_limit : steady torque limit of the handle motor; increase for a
+#                    stronger handle, decrease for a safer softer one
+#     pulse
+#       torque    : pulse feedback strength; increase for a stronger shake
+#       hold_time : hold per pulse step; increase for a slower deeper shake
+#       sequence  : torque direction pattern, scaled by torque
+#     nudge
+#       torque    : nudge strength; increase for a firmer push on the handle
+#       hold_time : nudge duration; increase for a longer push
+# ---------------------------------------------------------------------------

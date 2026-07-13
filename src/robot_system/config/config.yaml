@@ -1,0 +1,217 @@
+topics:
+  drive_command_publisher: "/command/drive"
+  handle_command_publisher: "/command/handle"
+  control_subscriber: "/interface/control"
+  joystick_subscriber: "/interface/joystick"
+  telemetry_subscriber: "/teensy/telemetry"
+  velocity_command_subscriber: "/command/robot"
+  user_velocity_publisher: "/command/user"
+  scan_subscriber: "/livox/scan"
+  mix_control_publisher: "/command/mix"
+  sound_publisher: "/command/sound"
+
+wheel:
+  radius: 0.108 # m
+  track: 0.42 # m
+
+footprint:
+  frame: "base_link"
+  length: 0.48 # m
+  width: 0.48 # m
+
+control_loop:
+  period: 0.05 # s
+  command_timeout: 0.5 # s
+  scan_timeout: 0.5 # s
+
+force:
+  deadzone: 0.8 # N
+  clamp_min: -3.0 # N
+  clamp_max: 3.0 # N
+  useful_range: 2.5 # N
+  low_pass_alpha: 0.35
+
+linear:
+  forward_gain: 37.5 # deg/s
+  reverse_gain: 25.5 # deg/s
+  max: 25.0 # deg/s
+  min: -17.0 # deg/s
+  max_acceleration: 6.0 # deg/s^2
+  max_deceleration: 15.0 # deg/s^2
+
+angular:
+  gain: 2.0
+  max_acceleration: 90.0 # deg/s^2
+  deadzone: 0.02 # rad
+
+mix:
+  obstacle_cone: 50.0 # deg
+  steer_cone: 20.0 # deg
+  user_full_distance: 0.7 # m
+  robot_full_distance: 0.2 # m
+  blind_latch_distance: 0.4 # m
+  max_forward_velocity: 0.8 # m/s
+  max_reverse_velocity: 0.1 # m/s
+  max_angular_velocity: 1.0 # rad/s
+  stop_hold_time: 0.5 # s
+  safety_cap: true
+
+nudge:
+  align_angle: 10.0 # deg
+  repeat_interval: 2.0 # s
+
+pulse:
+  distance: 1.0 # m
+  repeat_interval: 0.5 # s
+
+
+# ---------------------------------------------------------------------------
+# topics
+#   drive_command_publisher  : wheel velocity commands to the Teensy
+#   handle_command_publisher : handle motor commands to the Teensy
+#   control_subscriber       : mode and authority state from the web interface
+#   joystick_subscriber      : manual drive input from the web interface
+#   telemetry_subscriber     : sensor readings from the Teensy
+#   velocity_command_subscriber : Nav2 velocity commands, followed in auto
+#                             mode with robot authority
+#   user_velocity_publisher : the user handle body velocity in auto mode with
+#                             user or mix authority, published as a Twist
+#                             for debugging and for the mix telemetry
+#   scan_subscriber          : laser scan used in auto mode with mix
+#                             authority to find the nearest front obstacle
+#   mix_control_publisher    : mix control telemetry for the experiment
+#                             (weight, mixed velocity, contribution time),
+#                             published for logging and rosbag
+#   sound_publisher          : nearest front obstacle distance sent to the
+#                             sound_driver so it beeps faster as an obstacle
+#                             ahead gets closer, like a reversing sensor; the
+#                             beep runs in auto mode with robot or mix
+#                             authority, and can be tested from the webpage
+#                             sound dropdown with the beep entry
+#
+# wheel
+#   radius : drive wheel radius, must match the real wheel or speeds are wrong
+#   track  : distance between the left and right wheels, must match the robot
+#            or turning is wrong
+#
+# footprint
+#   frame          : frame the footprint is centered on
+#   length / width : robot body size
+#
+# control_loop
+#   period : control update interval; decrease for smoother mix control at
+#            more CPU, increase to save CPU but react slower
+#   command_timeout : Nav2 velocity commands older than this are not
+#            forwarded, so the robot stops when Nav2 goes quiet; increase to
+#            tolerate hiccups, decrease to stop faster
+#   scan_timeout : when the laser scan is older than this the front obstacle
+#            distance is treated as danger (mix weight 0, forward cap 0, beep
+#            silent) instead of trusting stale data; increase to tolerate
+#            scan hiccups, decrease to fail safe sooner
+#
+# force
+#   deadzone       : handle force ignored as noise; increase if the robot
+#                    creeps from hand resting weight, decrease for a more
+#                    sensitive handle
+#   clamp_min / clamp_max : force reading limits; widen to allow stronger
+#                    pushes to count, narrow to cap the input earlier
+#   useful_range   : force where the command reaches full scale; increase so
+#                    full speed needs a harder push, decrease for full speed
+#                    with a lighter push
+#   low_pass_alpha : force smoothing, 0.0 to 1.0; increase to follow the hand
+#                    faster but shakier, decrease for smoother slower response
+#
+# linear
+#   these values are the body forward velocity in degree units: they go
+#   through the differential drive kinematics unchanged and come out as
+#   wheel speeds in deg/s, so a value times 0.0175 (pi/180) is the body
+#   speed in m/s (forward_gain 25 is about 0.44 m/s)
+#   forward_gain / reverse_gain : wheel command per unit of pushed force;
+#                    increase so a given speed needs less push (up to the max
+#                    ceiling), decrease to require a firmer push
+#   max / min      : velocity limits forward and reverse, the ceiling the gain
+#                    saturates to
+#   max_acceleration : limit on speeding up; increase for snappier starts,
+#                    decrease for gentler ones
+#   max_deceleration : limit on slowing down; increase to stop harder when
+#                    the hand releases, decrease for softer stops
+#
+# angular
+#   gain             : turn rate per unit of handle angle; increase so a given
+#                    turn needs less handle rotation, decrease for less
+#                    sensitive steering
+#   max_acceleration : limit on turn rate change; increase for snappier
+#                    steering, decrease for smoother turns
+#   deadzone         : handle azimuth angle ignored as noise; increase if the
+#                    robot wanders straight ahead, decrease for finer steering
+#
+# mix
+#   auto mode with mix authority: Nav2 drives to the goal at its baseline
+#   speed and the user handle is added on top; the user weight fades with the
+#   obstacle distance in the direction the handle steers toward, so steering
+#   toward a clear direction is reflected and steering toward an obstacle is
+#   handed back to the robot; pulling back (braking) always acts at full
+#   weight because slowing down is always safe, and a pull held longer than
+#   stop_hold_time latches a stop that pauses the robot until the user pushes
+#   forward again; all distances are from the front of the footprint and the
+#   front distance also drives the sound_driver proximity beep; the telemetry
+#   splits the elapsed time into user, robot and stop contribution time
+#   obstacle_cone        : half angle of the front cone used for the forward
+#                    speed cap and the beep; increase to slow for obstacles
+#                    further to the sides, decrease to only watch ahead
+#   steer_cone           : half angle of the scan window around the steered
+#                    direction used for the user weight; increase to consider
+#                    obstacles near the steered path, decrease to only check
+#                    exactly where the handle points
+#   user_full_distance   : steered-direction distance at which the user has
+#                    full authority (user_weight 1.0); increase to hand
+#                    control to the robot from further out, decrease to let
+#                    the user lead closer in
+#   robot_full_distance  : distance at which the robot has full authority
+#                    (user_weight 0.0) and the forward speed cap reaches zero;
+#                    increase to stop further from obstacles, decrease to
+#                    allow closer approach
+#   blind_latch_distance : when an obstacle nearer than this drops out of the
+#                    scan (closer than the scan minimum range) the last
+#                    clearance is held instead of reading clear, for both the
+#                    front and the steered direction; increase to catch faster
+#                    approaches, decrease if far obstacles get stuck latched
+#   max_forward_velocity : forward speed the cap allows when the path is clear;
+#                    increase to allow a faster pushed boost, decrease to keep
+#                    the top speed lower
+#   max_reverse_velocity : reverse speed limit; kept low because the scan does
+#                    not cover the area behind the robot, increase only with
+#                    rear sensing
+#   max_angular_velocity : turn rate limit of the mixed command
+#   stop_hold_time       : how long a firm pull must be held to latch the stop;
+#                    increase to avoid accidental stops, decrease to stop with
+#                    a shorter pull
+#   safety_cap           : cap the forward speed to zero at robot_full_distance
+#                    so the robot always stops for a front obstacle; disable to
+#                    rely only on the weight fade
+#
+# nudge
+#   in auto mode with robot or mix authority, while the handle azimuth is
+#   outside align_angle of straight ahead the handle is nudged back toward
+#   centre (handle right of centre nudges left and the other way around),
+#   repeating until the handle is back inside the band; when the robot turns
+#   away to avoid an obstacle the handle leaves the band on its own, so the
+#   nudge is also the avoidance cue
+#   align_angle     : half width of the centred band; increase to allow more
+#                     handle angle before nudging, decrease to nudge sooner
+#   repeat_interval : time between repeated nudges while the handle stays
+#                     outside the band; increase for calmer cues, decrease
+#                     for more insistent ones
+#
+# pulse
+#   in auto mode with mix authority, while the handle azimuth points at an
+#   obstacle nearer than distance from the footprint the handle pulses
+#   repeatedly as a warning that the steered direction is blocked; user
+#   authority gives no feedback at all, the handle simply drives;
+#   the clearance is the same steered-direction distance the mix weight uses
+#   (steer_cone window, blind zone latched)
+#   distance        : obstacle distance from the footprint below which the
+#                     pulse fires; increase to warn earlier, decrease later
+#   repeat_interval : time between pulses while the condition holds; keep
+#                     above the pulse pattern length (about 0.3 s)
+# ---------------------------------------------------------------------------

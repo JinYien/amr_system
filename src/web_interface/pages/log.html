@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMR Data Log</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #14161a;
+      color: #e8e8e8;
+      font-family: system-ui, sans-serif;
+      padding: 16px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    #status { color: #9aa0a6; font-size: 13px; margin-bottom: 14px; }
+    #status.err { color: #f28b82; }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #1d2026;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 26px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+    }
+    #btn-start { background: #2e7d32; }
+    #btn-stop { background: #b3392f; }
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    #btn-control {
+      background: #3b5bdb;
+      padding: 8px 18px;
+      font-size: 13px;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+    #elapsed { font-size: 22px; font-variant-numeric: tabular-nums; margin-left: auto; }
+    #distance { font-size: 22px; font-variant-numeric: tabular-nums; color: #8ab4f8; }
+    #recording-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #444; display: inline-block; margin-right: 6px;
+    }
+    #recording-dot.on { background: #e53935; }
+    .topics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #1d2026;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .card h3 {
+      font-size: 13px;
+      color: #8ab4f8;
+      font-weight: 600;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .card pre {
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #cfd2d6;
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-bar">
+    <h1>AMR Data Log</h1>
+    <button id="btn-control">CONTROL</button>
+  </div>
+  <div id="status">connecting ...</div>
+
+  <div class="controls">
+    <span id="recording-dot"></span>
+    <button id="btn-start">START</button>
+    <button id="btn-stop" disabled>STOP</button>
+    <span id="elapsed">0.0 s</span>
+    <span id="distance">0.00 m</span>
+  </div>
+
+  <div class="topics" id="topics"></div>
+
+  <script>
+    (() => {
+      const statusEl = document.getElementById("status");
+      const startBtn = document.getElementById("btn-start");
+      const stopBtn = document.getElementById("btn-stop");
+      const elapsedEl = document.getElementById("elapsed");
+      const distanceEl = document.getElementById("distance");
+      const dotEl = document.getElementById("recording-dot");
+      const topicsEl = document.getElementById("topics");
+      const cards = {};
+      let ws = null;
+
+      function card(topic) {
+        if (!cards[topic]) {
+          const box = document.createElement("div");
+          box.className = "card";
+          const title = document.createElement("h3");
+          title.textContent = topic;
+          const body = document.createElement("pre");
+          box.appendChild(title);
+          box.appendChild(body);
+          topicsEl.appendChild(box);
+          cards[topic] = body;
+        }
+        return cards[topic];
+      }
+
+      function render(snapshot) {
+        dotEl.classList.toggle("on", snapshot.recording);
+        startBtn.disabled = snapshot.recording;
+        stopBtn.disabled = !snapshot.recording;
+        elapsedEl.textContent = snapshot.elapsed.toFixed(1) + " s";
+        distanceEl.textContent = snapshot.distance.toFixed(2) + " m";
+        for (const [topic, values] of Object.entries(snapshot.topics)) {
+          const lines = Object.entries(values).map(([key, value]) => {
+            if (typeof value === "number" && !Number.isInteger(value)) value = value.toFixed(4);
+            return key + ": " + value;
+          });
+          card(topic).textContent = lines.join("\n");
+        }
+      }
+
+      function download(name) {
+        const anchor = document.createElement("a");
+        anchor.href = "/download/" + encodeURIComponent(name);
+        anchor.download = name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+
+      function connect() {
+        ws = new WebSocket(`ws://${location.host}/ws`);
+        ws.onopen = () => {
+          statusEl.textContent = "connected";
+          statusEl.className = "";
+        };
+        ws.onmessage = (event) => {
+          let payload;
+          try { payload = JSON.parse(event.data); } catch (_) { return; }
+          if (payload.type === "snapshot") {
+            render(payload);
+          } else if (payload.type === "log_saved") {
+            if (window.confirm("Log saved as " + payload.name + "\nDownload the csv?")) {
+              download(payload.name);
+            }
+          }
+        };
+        ws.onclose = () => {
+          statusEl.textContent = "disconnected — retrying";
+          statusEl.className = "err";
+          setTimeout(connect, 1000);
+        };
+        ws.onerror = () => ws && ws.close();
+      }
+
+      startBtn.addEventListener("click", () => ws && ws.send(JSON.stringify({ type: "log_start" })));
+      stopBtn.addEventListener("click", () => ws && ws.send(JSON.stringify({ type: "log_stop" })));
+      document.getElementById("btn-control").addEventListener("click", () => {
+        window.location.href = "/control";
+      });
+      connect();
+    })();
+  </script>
+</body>
+</html>

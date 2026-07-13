@@ -1,0 +1,16 @@
+# ROS
+build
+install
+log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# other
+venv
+.vscode
+.cache
+src/fastlio/log/*
+src/fastlio/pcd/*

@@ -1,0 +1,41 @@
+topics:
+  lidar_publisher: /livox/lidar
+  imu_publisher: /livox/imu
+
+device:
+  device_type: MID360
+  point_cloud_format: 1
+  publish_frequency: 60.0 # Hz
+  separate_topic_per_lidar: false
+  frame_id: livox
+
+filters:
+  min_range: 0.1 # m
+  max_range: 5.0 # m
+  min_height: -0.30 # m
+  max_height: 1.20 # m
+
+# ---------------------------------------------------------------------------
+# topics
+#   lidar_publisher : point cloud output of the MID360
+#   imu_publisher   : IMU output of the MID360
+#
+# device
+#   device_type              : Livox model connected to the driver
+#   point_cloud_format       : 0 PointCloud2 PointXYZRTLT, 1 Livox CustomMsg,
+#                              2 PCL PointXYZI; fastlio needs 1
+#   publish_frequency        : rate the driver packs points into messages,
+#                              clamped to 0.5 - 100; increase for fresher
+#                              smaller messages at more overhead, decrease
+#                              for fewer bigger messages
+#   separate_topic_per_lidar : one topic per device instead of a shared one
+#   frame_id                 : frame stamped on the published messages
+#
+# filters
+#   min_range  : increase to drop more returns from the robot body,
+#                decrease to keep closer points
+#   max_range  : increase to keep further returns for mapping, decrease to
+#                drop far noise and lighten every consumer downstream
+#   min_height / max_height : height band kept; widen to see more of the
+#                environment, narrow to a slice and lighten the cloud
+# ---------------------------------------------------------------------------

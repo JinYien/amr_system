@@ -1,0 +1,38 @@
+topics:
+  sound_subscriber: "/command/sound"
+
+beep:
+  near_distance: 0.2 # m
+  far_distance: 0.4 # m
+  near_interval: 0.1 # s
+  far_interval: 2.0 # s
+  gap: 0.05 # s
+  frequency: 880.0 # Hz
+  volume: 0.6
+
+# ---------------------------------------------------------------------------
+# topics
+#   sound_subscriber : sound requests, wav clip names and the obstacle
+#                      distance; the reserved clip name beep plays one
+#                      proximity beep tone for testing
+#
+# beep
+#   a single continuous tone stream is fed to the speaker and switched on and
+#   off to make the beeps, so the beeps speed up smoothly as an obstacle gets
+#   nearer and merge into one solid tone at near_distance, like a car parking
+#   sensor
+#   near_distance : obstacle distance at or below which the beep is a solid
+#                   continuous tone; increase to reach the solid tone earlier,
+#                   decrease to only reach it when nearly touching
+#   far_distance  : obstacle distance where beeping starts; increase to start
+#                   warning further away, decrease to only warn when close
+#   near_interval : on-off cycle time at near_distance, the fastest pulsing
+#                   before it turns solid; decrease for a more urgent rate
+#   far_interval  : on-off cycle time at far_distance; increase for calmer
+#                   sparse warnings, decrease for more frequent ones
+#   gap           : silent time within each cycle; small keeps the beeps close
+#                   together so it feels continuous, larger makes them distinct
+#   frequency     : beep tone pitch; increase for a sharper higher tone,
+#                   decrease for a deeper one
+#   volume        : beep loudness, 0.0 to 1.0; increase louder, decrease softer
+# ---------------------------------------------------------------------------

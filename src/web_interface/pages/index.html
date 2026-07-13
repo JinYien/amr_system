@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Robot Controller</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #141b2d;
+      --panel-soft: #1a2238;
+      --accent: #60a5fa;
+      --accent-active: #f97316;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #101a35 0%, var(--bg) 45%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      touch-action: pan-y;
+    }
+
+    header {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(20, 27, 45, 0.88);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 650;
+      letter-spacing: 0.2px;
+    }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.ok {
+      color: #4ade80;
+    }
+
+    #status.err {
+      color: #f87171;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100% - 52px);
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .section {
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      padding: 10px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      padding: 0 4px;
+      font-size: 12px;
+      letter-spacing: 0.35px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .joysticks {
+      flex: 1;
+      display: flex;
+      min-height: 280px;
+    }
+
+    .joystick-zone {
+      flex: 1;
+      background: var(--panel-soft);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      grid-template-areas: "left pulse right";
+    }
+
+    #btn-nudge-left {
+      grid-area: left;
+    }
+
+    #btn-pulse {
+      grid-area: pulse;
+    }
+
+    #btn-nudge-right {
+      grid-area: right;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .map-wrap {
+      background: var(--panel-soft);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    #nav-canvas {
+      display: block;
+      width: 100%;
+      touch-action: none;
+      cursor: crosshair;
+      image-rendering: pixelated;
+    }
+
+    #nav-status {
+      padding: 0 4px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 16px;
+    }
+
+    #btn-nav-start.active {
+      background: #16a34a;
+      border-color: #16a34a;
+    }
+
+    #btn-nav-goal.active {
+      background: var(--accent-active);
+      border-color: var(--accent-active);
+    }
+
+    #btn-nav-waypoint.active {
+      background: #7c3aed;
+      border-color: #7c3aed;
+    }
+
+    #btn-nav-send {
+      background: #14532d;
+      border-color: #16a34a;
+    }
+
+    #btn-nav-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #btn-nav-stop {
+      background: #7f1d1d;
+      border-color: #b91c1c;
+    }
+
+    button {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 16px 8px;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    button:active,
+    button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(0.98);
+    }
+
+    button.latch.active {
+      background: var(--accent-active);
+      border-color: var(--accent-active);
+    }
+
+    @media (max-width: 640px) {
+      main {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .section {
+        padding: 8px;
+      }
+
+      .joysticks {
+        min-height: 220px;
+      }
+
+      button {
+        padding: 14px 6px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Robot Controller</h1>
+    <div class="header-bar">
+      <span id="status">connecting...</span>
+      <button id="btn-log" class="header-btn">LOG</button>
+    </div>
+  </header>
+  <main>
+    <section class="section">
+      <h2 class="section-title">Mode</h2>
+      <div class="row-2">
+        <button id="btn-manual" class="latch active">MANUAL</button>
+        <button id="btn-auto" class="latch">AUTO</button>
+      </div>
+    </section>
+
+    <section id="authority-section" class="section hidden">
+      <h2 class="section-title">Authority</h2>
+      <div class="row-3">
+        <button id="btn-user" class="latch active">USER</button>
+        <button id="btn-robot" class="latch">ROBOT</button>
+        <button id="btn-mix-control" class="latch">MIX CONTROL</button>
+      </div>
+    </section>
+
+    <section id="navigation-section" class="section hidden">
+      <h2 class="section-title">Navigation</h2>
+      <div class="map-wrap">
+        <canvas id="nav-canvas"></canvas>
+      </div>
+      <div id="nav-status">waiting for map ...</div>
+      <div class="row-3">
+        <button id="btn-nav-start" class="latch">PICK START</button>
+        <button id="btn-nav-waypoint" class="latch">ADD WAYPOINT</button>
+        <button id="btn-nav-goal" class="latch">PICK GOAL</button>
+      </div>
+      <div class="row-2">
+        <button id="btn-nav-stop">STOP</button>
+        <button id="btn-nav-send" disabled>START</button>
+      </div>
+    </section>
+
+    <section id="drive-section" class="section">
+      <h2 class="section-title">Drive Motor</h2>
+      <div class="joysticks">
+        <div id="drive-joy" class="joystick-zone"></div>
+      </div>
+    </section>
+
+    <section id="handle-section" class="section">
+      <h2 class="section-title">Handle Motor</h2>
+      <div class="buttons">
+        <button id="btn-nudge-left">NUDGE LEFT</button>
+        <button id="btn-pulse">PULSE</button>
+        <button id="btn-nudge-right">NUDGE RIGHT</button>
+      </div>
+    </section>
+
+    <section id="sound-section" class="section">
+      <h2 class="section-title">Sound Effect</h2>
+      <div class="row-2">
+        <select id="sound-select" style="padding: 8px; background: #222; color: #eee; border: 1px solid #444"></select>
+        <button id="btn-sound-play">PLAY</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/nipplejs.js"></script>
+  <script>
+    (() => {
+      const statusEl = document.getElementById("status");
+
+      let ws = null;
+      let linear = 0.0;
+      let angular = 0.0;
+      let mode = "manual";
+      let authority = "";
+
+      function connect() {
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
+        ws = new WebSocket(`${proto}//${location.host}/ws`);
+        ws.onopen = () => {
+          statusEl.textContent = "connected";
+          statusEl.className = "ok";
+          send({ type: "mode", value: mode });
+          send({ type: "sounds_request" });
+          send({ type: "limits_request" });
+        };
+        ws.onmessage = (event) => {
+          let payload;
+          try { payload = JSON.parse(event.data); } catch (_) { return; }
+          if (payload.type === "sounds") {
+            populateSounds(payload.list || []);
+          } else if (payload.type === "limits") {
+            if (typeof payload.linear === "number") maxLinear = payload.linear;
+            if (typeof payload.angular === "number") maxAngular = payload.angular;
+          } else if (payload.type === "map") {
+            receiveMap(payload);
+          } else if (payload.type === "robot_pose") {
+            receiveRobotPose(payload);
+          }
+        };
+        ws.onclose = () => {
+          statusEl.textContent = "disconnected — retrying";
+          statusEl.className = "err";
+          setTimeout(connect, 1000);
+        };
+        ws.onerror = () => ws && ws.close();
+      }
+
+      function send(obj) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(obj));
+        }
+      }
+
+      let maxLinear = 0.5;
+      let maxAngular = 1.5;
+
+      function clampLinear(v) { return Math.max(-maxLinear, Math.min(maxLinear, v)); }
+
+      function clampAngular(v) { return Math.max(-maxAngular, Math.min(maxAngular, v)); }
+
+      function sendAxes() {
+        send({ type: "axes", linear, angular });
+      }
+
+      const driveJoy = nipplejs.create({
+        zone: document.getElementById("drive-joy"),
+        mode: "static",
+        position: { left: "50%", top: "50%" },
+        color: "#60a5fa",
+        size: 140,
+      });
+      driveJoy.on("move", (_, data) => {
+        if (!data || !data.vector) return;
+        linear = clampLinear(data.vector.y * maxLinear);
+        angular = clampAngular(-data.vector.x * maxAngular);
+        sendAxes();
+      });
+      driveJoy.on("end", () => { linear = 0.0; angular = 0.0; sendAxes(); });
+
+      function bindMomentary(id, payload) {
+        const btn = document.getElementById(id);
+        const press = (e) => {
+          e.preventDefault();
+          btn.classList.add("active");
+          send({ type: "middle", ...payload });
+        };
+        const release = (e) => {
+          e.preventDefault();
+          btn.classList.remove("active");
+        };
+        btn.addEventListener("pointerdown", press);
+        btn.addEventListener("pointerup", release);
+        btn.addEventListener("pointerleave", release);
+        btn.addEventListener("pointercancel", release);
+      }
+
+      bindMomentary("btn-pulse", { mode: "pulse", action: "" });
+      bindMomentary("btn-nudge-left", { mode: "nudge", action: "left" });
+      bindMomentary("btn-nudge-right", { mode: "nudge", action: "right" });
+
+      document.getElementById("btn-log").addEventListener("click", () => {
+        window.location.href = "/log";
+      });
+
+      const manualBtn = document.getElementById("btn-manual");
+      const autoBtn = document.getElementById("btn-auto");
+      const driveSection = document.getElementById("drive-section");
+      const handleSection = document.getElementById("handle-section");
+      const authoritySection = document.getElementById("authority-section");
+      const soundSection = document.getElementById("sound-section");
+      function setMode(value) {
+        mode = value;
+        if (value !== "auto") {
+          clearAuthoritySelection();
+        }
+        manualBtn.classList.toggle("active", value === "manual");
+        autoBtn.classList.toggle("active", value === "auto");
+        driveSection.classList.toggle("hidden", value !== "manual");
+        handleSection.classList.toggle("hidden", value !== "manual");
+        soundSection.classList.toggle("hidden", value !== "manual");
+        authoritySection.classList.toggle("hidden", value !== "auto");
+        updateNavigationVisibility();
+        send({ type: "mode", value });
+      }
+      manualBtn.addEventListener("click", () => setMode("manual"));
+      autoBtn.addEventListener("click", () => setMode("auto"));
+
+      const userBtn = document.getElementById("btn-user");
+      const robotBtn = document.getElementById("btn-robot");
+      const mixControlBtn = document.getElementById("btn-mix-control");
+      function clearAuthoritySelection() {
+        authority = "";
+        userBtn.classList.remove("active");
+        robotBtn.classList.remove("active");
+        mixControlBtn.classList.remove("active");
+      }
+
+      function setAuthority(value) {
+        authority = value;
+        userBtn.classList.toggle("active", value === "user");
+        robotBtn.classList.toggle("active", value === "robot");
+        mixControlBtn.classList.toggle("active", value === "mix");
+        updateNavigationVisibility();
+        send({ type: "authority", value });
+      }
+      userBtn.addEventListener("click", () => setAuthority("user"));
+      robotBtn.addEventListener("click", () => setAuthority("robot"));
+      mixControlBtn.addEventListener("click", () => setAuthority("mix"));
+
+      const navigationSection = document.getElementById("navigation-section");
+      const navCanvas = document.getElementById("nav-canvas");
+      const navContext = navCanvas.getContext("2d");
+      const navStatus = document.getElementById("nav-status");
+      const navStartBtn = document.getElementById("btn-nav-start");
+      const navWaypointBtn = document.getElementById("btn-nav-waypoint");
+      const navGoalBtn = document.getElementById("btn-nav-goal");
+      const navSendBtn = document.getElementById("btn-nav-send");
+      const navStopBtn = document.getElementById("btn-nav-stop");
+
+      let mapMeta = null;
+      let mapImage = null;
+      let mapRequested = false;
+      let activePicker = null;
+      let dragAnchor = null;
+      let robotPose = null;
+      const picks = { start: null, goal: null };
+      let waypoints = [];
+
+      function navigationAllowed() {
+        return mode === "auto" && (authority === "robot" || authority === "mix");
+      }
+
+      function updateNavigationVisibility() {
+        const visible = navigationAllowed();
+        navigationSection.classList.toggle("hidden", !visible);
+        if (visible && !mapRequested) {
+          mapRequested = true;
+          send({ type: "map_request" });
+        }
+      }
+
+      function receiveMap(payload) {
+        if (payload.error || !payload.pixels) {
+          navStatus.textContent = "map not available";
+          mapRequested = false;
+          return;
+        }
+        mapMeta = {
+          width: payload.width,
+          height: payload.height,
+          resolution: payload.resolution,
+          origin: payload.origin,
+        };
+        const raw = atob(payload.pixels);
+        const image = navContext.createImageData(mapMeta.width, mapMeta.height);
+        for (let i = 0; i < raw.length; i++) {
+          const value = raw.charCodeAt(i);
+          image.data[i * 4] = value;
+          image.data[i * 4 + 1] = value;
+          image.data[i * 4 + 2] = value;
+          image.data[i * 4 + 3] = 255;
+        }
+        navCanvas.width = mapMeta.width;
+        navCanvas.height = mapMeta.height;
+        const buffer = document.createElement("canvas");
+        buffer.width = mapMeta.width;
+        buffer.height = mapMeta.height;
+        buffer.getContext("2d").putImageData(image, 0, 0);
+        mapImage = buffer;
+        navStatus.textContent = "pick a start and a goal, drag to set the heading";
+        drawNavigation();
+      }
+
+      function pixelToWorld(px, py) {
+        return {
+          x: mapMeta.origin[0] + (px + 0.5) * mapMeta.resolution,
+          y: mapMeta.origin[1] + (mapMeta.height - 1 - py + 0.5) * mapMeta.resolution,
+        };
+      }
+
+      function worldToPixel(x, y) {
+        return {
+          px: (x - mapMeta.origin[0]) / mapMeta.resolution - 0.5,
+          py: mapMeta.height - 0.5 - (y - mapMeta.origin[1]) / mapMeta.resolution,
+        };
+      }
+
+      function receiveRobotPose(payload) {
+        robotPose = payload;
+        drawNavigation();
+      }
+
+      function drawRobot() {
+        if (!mapMeta || !robotPose) return;
+        const at = worldToPixel(robotPose.x, robotPose.y);
+        navContext.strokeStyle = "#38bdf8";
+        navContext.fillStyle = "#38bdf8";
+        navContext.lineWidth = 2;
+        navContext.beginPath();
+        navContext.arc(at.px, at.py, 6, 0, Math.PI * 2);
+        navContext.fill();
+        const length = 18;
+        navContext.beginPath();
+        navContext.moveTo(at.px, at.py);
+        navContext.lineTo(at.px + Math.cos(robotPose.yaw) * length, at.py - Math.sin(robotPose.yaw) * length);
+        navContext.stroke();
+      }
+
+      function drawMarker(pick, color) {
+        navContext.strokeStyle = color;
+        navContext.fillStyle = color;
+        navContext.lineWidth = 2;
+        navContext.beginPath();
+        navContext.arc(pick.px, pick.py, 5, 0, Math.PI * 2);
+        navContext.fill();
+        const length = 14;
+        const tipX = pick.px + Math.cos(pick.yaw) * length;
+        const tipY = pick.py - Math.sin(pick.yaw) * length;
+        navContext.beginPath();
+        navContext.moveTo(pick.px, pick.py);
+        navContext.lineTo(tipX, tipY);
+        navContext.stroke();
+      }
+
+      function drawWaypoint(point, index) {
+        navContext.fillStyle = "#a78bfa";
+        navContext.strokeStyle = "#0b1020";
+        navContext.lineWidth = 2;
+        navContext.beginPath();
+        navContext.arc(point.px, point.py, 7, 0, Math.PI * 2);
+        navContext.fill();
+        navContext.stroke();
+        navContext.fillStyle = "#0b1020";
+        navContext.font = "bold 10px sans-serif";
+        navContext.textAlign = "center";
+        navContext.textBaseline = "middle";
+        navContext.fillText(String(index + 1), point.px, point.py);
+      }
+
+      function drawNavigation() {
+        if (!mapImage) return;
+        navContext.drawImage(mapImage, 0, 0);
+        drawRobot();
+        if (picks.start) drawMarker(picks.start, "#4ade80");
+        waypoints.forEach(drawWaypoint);
+        if (picks.goal) drawMarker(picks.goal, "#f97316");
+        navSendBtn.disabled = !picks.goal;
+      }
+
+      function clearPicks() {
+        picks.start = null;
+        picks.goal = null;
+        waypoints = [];
+        activePicker = null;
+        dragAnchor = null;
+        navStartBtn.classList.remove("active");
+        navWaypointBtn.classList.remove("active");
+        navGoalBtn.classList.remove("active");
+        drawNavigation();
+      }
+
+      function canvasPixel(event) {
+        const rect = navCanvas.getBoundingClientRect();
+        return {
+          px: ((event.clientX - rect.left) / rect.width) * navCanvas.width,
+          py: ((event.clientY - rect.top) / rect.height) * navCanvas.height,
+        };
+      }
+
+      function setPicker(name) {
+        activePicker = activePicker === name ? null : name;
+        navStartBtn.classList.toggle("active", activePicker === "start");
+        navWaypointBtn.classList.toggle("active", activePicker === "waypoint");
+        navGoalBtn.classList.toggle("active", activePicker === "goal");
+      }
+      navStartBtn.addEventListener("click", () => setPicker("start"));
+      navWaypointBtn.addEventListener("click", () => setPicker("waypoint"));
+      navGoalBtn.addEventListener("click", () => setPicker("goal"));
+
+      function waypointAt(px, py) {
+        return waypoints.findIndex((w) => Math.hypot(w.px - px, w.py - py) <= 9);
+      }
+
+      navCanvas.addEventListener("pointerdown", (event) => {
+        if (!mapMeta || !activePicker) return;
+        event.preventDefault();
+        const at = canvasPixel(event);
+        if (activePicker === "waypoint") {
+          const hit = waypointAt(at.px, at.py);
+          if (hit >= 0) {
+            waypoints.splice(hit, 1);
+          } else {
+            waypoints.push({ px: at.px, py: at.py, yaw: 0.0, ...pixelToWorld(at.px, at.py) });
+          }
+          navStatus.textContent = `${waypoints.length} waypoint(s), tap one to remove it, then pick a goal`;
+          drawNavigation();
+          return;
+        }
+        navCanvas.setPointerCapture(event.pointerId);
+        dragAnchor = at;
+        picks[activePicker] = { ...dragAnchor, yaw: 0.0, ...pixelToWorld(dragAnchor.px, dragAnchor.py) };
+        drawNavigation();
+      });
+      navCanvas.addEventListener("pointermove", (event) => {
+        if (!dragAnchor || !activePicker || activePicker === "waypoint") return;
+        const point = canvasPixel(event);
+        const dx = point.px - dragAnchor.px;
+        const dy = point.py - dragAnchor.py;
+        if (Math.hypot(dx, dy) > 3) {
+          picks[activePicker].yaw = Math.atan2(-dy, dx);
+          drawNavigation();
+        }
+      });
+      navCanvas.addEventListener("pointerup", () => {
+        if (!dragAnchor) return;
+        dragAnchor = null;
+        setPicker(null);
+        drawNavigation();
+      });
+
+      navSendBtn.addEventListener("click", () => {
+        if (!picks.goal || !navigationAllowed()) return;
+        const payload = { type: "navigation", goal: { x: picks.goal.x, y: picks.goal.y, yaw: picks.goal.yaw } };
+        if (picks.start) {
+          payload.start = { x: picks.start.x, y: picks.start.y, yaw: picks.start.yaw };
+        }
+        if (waypoints.length) {
+          payload.waypoints = waypoints.map((w, i) => {
+            const next = i + 1 < waypoints.length ? waypoints[i + 1] : picks.goal;
+            return { x: w.x, y: w.y, yaw: Math.atan2(next.y - w.y, next.x - w.x) };
+          });
+        }
+        send(payload);
+        navStatus.textContent = waypoints.length
+          ? `started, passing through ${waypoints.length} waypoint(s) to the goal`
+          : "started, the robot is navigating";
+      });
+
+      navStopBtn.addEventListener("click", () => {
+        send({ type: "navigation_stop" });
+        clearPicks();
+        navStatus.textContent = "stopped, start and goal cleared";
+      });
+
+      const soundSelect = document.getElementById("sound-select");
+      function populateSounds(list) {
+        soundSelect.innerHTML = "";
+        for (const name of list) {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          soundSelect.appendChild(option);
+        }
+      }
+      document.getElementById("btn-sound-play").addEventListener("click", () => {
+        if (soundSelect.value) send({ type: "sound", play: soundSelect.value });
+      });
+
+      setAuthority("");
+      setMode("manual");
+      connect();
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,58 @@
+topics:
+  point_cloud_subscriber: "/fastlio/cloud_registered_body"
+  laser_scan_publisher: "/livox/scan"
+
+frames:
+  base: "base_link"
+  sensor: "livox"
+
+filter:
+  min_height: 0.0 # m
+  max_height: 0.5 # m
+  range_min: 0.27 # m
+  range_max: 30.0 # m
+  angle_min: -130.0 # deg
+  angle_max: 130.0 # deg
+  angle_increment: 0.5 # deg
+
+footprint:
+  length: 0.48 # m
+  width: 0.48 # m
+  margin: 0.02 # m
+
+# ---------------------------------------------------------------------------
+# topics
+#   point_cloud_subscriber : deskewed body frame cloud from Fast-LIO
+#   laser_scan_publisher   : flattened 2D scan output for slam_toolbox and Nav2
+#
+# frames
+#   base   : frame the scan is expressed in
+#   sensor : lidar frame in the URDF, used to transform points to base
+#
+# filter
+#   min_height / max_height : height band above base kept in the scan; widen
+#                             to see more obstacles at different heights but
+#                             also more floor and ceiling noise, narrow to a
+#                             clean slice around obstacle height
+#   range_min               : increase to ignore more near returns from the
+#                             robot itself, decrease to see closer obstacles;
+#                             must stay below 0.29 or the walls of a 0.58 m
+#                             gap disappear from the scan while inside it
+#   range_max               : increase to map further away, decrease to drop
+#                             noisy far returns; keep equal to the
+#                             slam_toolbox max_laser_range
+#   angle_min / angle_max   : bearing arc kept in the scan; widen toward 180
+#                             to see more around the robot, narrow to cut
+#                             returns blocked by the robot body
+#   angle_increment         : scan bin width; increase for fewer bins and less
+#                             CPU but a coarser scan, decrease for a finer
+#                             scan at more CPU
+#
+# footprint
+#   length / width : robot body size, points inside are removed so the robot
+#                    never sees itself as an obstacle
+#   margin         : extra clearance around the body; increase if body edges
+#                    still appear in the scan, decrease if close obstacles
+#                    are being removed; body/2 + margin must stay below 0.29
+#                    or the walls of a 0.58 m gap are deleted as robot body
+# ---------------------------------------------------------------------------

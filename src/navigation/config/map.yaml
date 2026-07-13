@@ -1,0 +1,121 @@
+slam_toolbox:
+  ros__parameters:
+    # ---- Plugins / solver ----
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # ---- Frames / topic ----
+    mode: mapping
+    map_frame: map
+    odom_frame: odom
+    base_frame: base_link
+    scan_topic: /livox/scan
+    use_sim_time: false
+
+    # ---- Rates / map ----
+    debug_logging: false
+    throttle_scans: 1
+    transform_publish_period: 0.02
+    map_update_interval: 2.0
+    resolution: 0.05
+    max_laser_range: 30.0
+    minimum_time_between_scans: 0.1
+    transform_timeout: 0.2
+    tf_buffer_duration: 30.0
+    stack_size_to_use: 40000000
+    enable_interactive_mode: true
+
+    # ---- Scan insertion ----
+    minimum_travel_distance: 0.15
+    minimum_travel_heading: 0.15
+    scan_buffer_size: 15
+    scan_buffer_maximum_scan_distance: 30.0
+    link_match_minimum_response_fine: 0.12
+    link_scan_maximum_distance: 1.5
+
+    # ---- Loop closure ----
+    do_loop_closing: false
+    loop_search_maximum_distance: 1.5
+    loop_match_minimum_chain_size: 15
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.45
+
+    # ---- Correlation (local scan match) ----
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+
+    # ---- Correlation (loop closure) ----
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # ---- Scan matcher penalties (lean on odometry) ----
+    distance_variance_penalty: 0.5
+    angle_variance_penalty: 1.0
+    fine_search_angle_offset: 0.00349
+    coarse_search_angle_offset: 0.349
+    coarse_angle_resolution: 0.0349
+    minimum_angle_penalty: 0.9
+    minimum_distance_penalty: 0.5
+    use_response_expansion: true
+
+# ---------------------------------------------------------------------------
+# solver
+#   solver_plugin and ceres_*   : optimizer used for the pose graph
+#
+# frames / topic
+#   map_frame / odom_frame / base_frame : TF tree slam_toolbox works in
+#   scan_topic                          : laser scan input
+#
+# rates / map
+#   debug_logging              : verbose solver output
+#   throttle_scans             : process every Nth scan
+#   transform_publish_period   : map -> odom TF publish interval (s)
+#   map_update_interval        : occupancy grid rebuild interval (s)
+#   resolution                 : occupancy grid cell size (m)
+#   max_laser_range            : scan range used for mapping, keep equal to the
+#                                converter range_max (m)
+#   minimum_time_between_scans : scans arriving faster are dropped (s)
+#   transform_timeout          : TF lookup wait limit (s)
+#   tf_buffer_duration         : TF history kept for matching (s)
+#   stack_size_to_use          : thread stack size for map serialization
+#   enable_interactive_mode    : allow moving graph nodes from RViz
+#
+# scan insertion
+#   minimum_travel_distance / minimum_travel_heading : motion needed before a
+#     new scan is added to the graph (m / rad)
+#   scan_buffer_size                  : recent scans kept for matching
+#   scan_buffer_maximum_scan_distance : keep >= max_laser_range (m)
+#   link_match_minimum_response_fine  : match quality needed to link scans
+#   link_scan_maximum_distance        : furthest scans considered for linking (m)
+#
+# loop closure
+#   do_loop_closing                   : search for revisited places; kept off
+#     because a continuous zigzag route has self-similar legs that all look the
+#     same, so loop closure would false-match one leg to another and fold the
+#     map; Fast-LIO odometry carries a single pass without it. Set it true only
+#     if the route actually returns to a place it has been, and then keep the
+#     search distance small and the chain size large so only the real revisit
+#     closes, not a look-alike leg
+#   loop_search_maximum_distance      : search radius for loop candidates (m)
+#   loop_match_minimum_chain_size     : consecutive scans needed for a candidate
+#   loop_match_maximum_variance_coarse: reject uncertain coarse matches
+#   loop_match_minimum_response_*     : match quality needed to close a loop
+#
+# correlation
+#   correlation_search_space_* : local scan match search window and grid
+#   loop_search_space_*        : loop closure search window and grid
+#
+# scan matcher
+#   distance_variance_penalty / angle_variance_penalty : cost of deviating from
+#     odometry, higher trusts Fast-LIO odometry more
+#   fine/coarse_search_angle_offset, coarse_angle_resolution : angular search span
+#   minimum_angle_penalty / minimum_distance_penalty : lower bound on penalties
+#   use_response_expansion : widen the search when the match is poor
+# ---------------------------------------------------------------------------

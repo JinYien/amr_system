@@ -1,0 +1,29 @@
+topics:
+  odometry_subscriber: "/fastlio/odometry"
+  odometry_publisher: "/odom"
+
+frames:
+  odom: "odom"
+  base: "base_link"
+  sensor: "livox"
+
+options:
+  zero_first_pose: true
+  publish_tf: true
+
+# ---------------------------------------------------------------------------
+# topics
+#   odometry_subscriber : Fast-LIO odometry input (camera_init -> body)
+#   odometry_publisher  : robot centered planar odometry output (odom -> base_link)
+#
+# frames
+#   odom   : odometry frame of the published odometry and TF
+#   base   : robot base frame the pose is expressed in
+#   sensor : lidar frame in the URDF, used to look up the sensor offset
+#
+# options
+#   zero_first_pose : true starts the odometry at zero from the first received
+#                     pose, false keeps Fast-LIO's own origin
+#   publish_tf      : true broadcasts the odom -> base TF needed by
+#                     slam_toolbox and Nav2, false leaves TF to another node
+# ---------------------------------------------------------------------------

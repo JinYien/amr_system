@@ -1,0 +1,106 @@
+topics:
+  scan_subscriber: "/livox/scan"
+  control_subscriber: "/interface/control"
+  intersection_publisher: "/intersection/state"
+  marker_publisher: "/intersection/markers"
+  sound_publisher: "/command/sound"
+
+sounds:
+  enable: true
+  deadend: "deadend"
+  corridor: "corridor"
+  left_corner: "left_corner"
+  right_corner: "right_corner"
+  left_junction: "left_junction"
+  right_junction: "right_junction"
+  t_junction: "t_junction"
+  cross: "cross"
+  open_space: "open_space"
+
+robot:
+  width: 0.48 # m
+  safety_margin: 0.05 # m
+
+detection:
+  lidar_yaw_offset: 0.0 # deg
+  min_open_distance: 1.5 # m
+  open_space_distance: 2.5 # m
+  open_space_hysteresis: 0.2 # m
+  front_min: -40.0 # deg
+  front_max: 40.0 # deg
+  left_min: 50.0 # deg
+  left_max: 130.0 # deg
+  right_min: -130.0 # deg
+  right_max: -50.0 # deg
+  debounce_time: 0.2 # s
+  detection_rate: 5.0 # Hz
+
+visualization:
+  enable: true
+  marker_lifetime: 0.3 # s
+  sector_alpha: 0.25
+  point_size: 0.04 # m
+
+# ---------------------------------------------------------------------------
+# topics
+#   scan_subscriber        : laser scan input, the fastlio_converter scan in
+#                            the base_link frame with 0 deg straight ahead
+#   control_subscriber     : mode and authority state, used to mute the
+#                            junction sounds in auto mode with user authority
+#   intersection_publisher : open directions and junction type for feedback
+#   marker_publisher       : RViz markers of the sectors, beams and gaps
+#   sound_publisher        : sound clip requests to the sound_driver
+#
+# sounds
+#   a clip is played once each time the junction type changes, so the sound
+#   is not repeated while the junction stays the same; muted in auto mode
+#   with user authority
+#   enable       : play the junction sounds; disable to stay silent
+#   deadend .. open_space : wav clip name in the sound_driver wav folder to
+#                  play for each junction type, without the .wav extension;
+#                  leave empty to stay silent for that junction
+#
+# robot
+#   width          : robot body width; a sector counts as open only when the
+#                    gap is at least this wide plus the margin, so the robot
+#                    could actually pass; increase for a stricter open test
+#   safety_margin  : extra clearance added to each side of the width; increase
+#                    to require wider openings, decrease to allow tighter ones
+#
+# detection
+#   lidar_yaw_offset  : rotation from the scan frame to the robot frame; keep
+#                       0 because the converter scan is already base_link with
+#                       0 deg forward, set it if the scan is mounted rotated
+#   min_open_distance : clearance from the footprint edge beyond which a beam
+#                       is treated as free space (the node adds the half body
+#                       internally because the scan measures from the robot
+#                       centre); a gap must open past this to count; increase
+#                       to only flag openings that lead somewhere, decrease to
+#                       react sooner
+#   open_space_distance : when every sector is open and the nearest wall is
+#                       farther than this from the footprint edge, the
+#                       junction is reported as open_space instead of cross;
+#                       must stay above min_open_distance; increase so only
+#                       very large areas count as open space, decrease to
+#                       flag smaller clearings
+#   open_space_hysteresis : once in open_space it only drops back to cross
+#                       when the nearest wall comes closer than
+#                       open_space_distance minus this, so the label does not
+#                       flicker at the boundary; increase for a stickier
+#                       label, decrease for a more reactive one
+#   front_min/max     : front sector arc in the robot frame, 0 deg is straight
+#                       ahead, positive is left; widen to watch a broader front
+#   left_min/max      : left sector arc; positive angles are the left side
+#   right_min/max     : right sector arc; negative angles are the right side
+#   debounce_time     : an opening must persist this long before it is reported
+#                       open, and close as long before it is reported blocked;
+#                       increase to steady the output, decrease to react faster
+#   detection_rate    : how often the scan is analysed; increase for a fresher
+#                       result at more CPU, decrease to save CPU
+#
+# visualization
+#   enable         : publish the RViz markers, only built when subscribed
+#   marker_lifetime: seconds a marker stays before it fades if not refreshed
+#   sector_alpha   : sector wedge transparency, 0 clear to 1 solid
+#   point_size     : size of the drawn beam points in metres
+# ---------------------------------------------------------------------------

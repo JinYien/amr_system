@@ -1,0 +1,51 @@
+<!--
+  navigate to pose behavior tree, based on the nav2 default
+  navigate_to_pose_w_replanning_and_recovery.xml
+
+  changed so every recovery action finishes within 1 s: the default tree
+  recovers with a 90 degree spin (~2 s), a 5 s wait and a 0.30 m backup,
+  which left the robot dancing for seconds after every failure; here the
+  round robin is clear costmaps (instant), a 0.15 m backup at 0.15 m/s
+  (~1 s) and a 1 s wait, and number_of_retries is raised from 6 to 10 so
+  the shorter recoveries still get enough attempts overall
+
+  the path is replanned at 2 Hz (RateController), paired with the global
+  costmap updating at 3 Hz, so a live obstacle enters the plan and the
+  detour starts while the robot is still approaching it instead of after
+  it has already stopped at the obstacle
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="10" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="2.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            <ReactiveFallback name="ComputePathToPoseRecoveryFallback">
+              <GoalUpdated/>
+              <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
+            </ReactiveFallback>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="1" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ReactiveFallback name="FollowPathRecoveryFallback">
+            <GoalUpdated/>
+            <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+          </ReactiveFallback>
+        </RecoveryNode>
+      </PipelineSequence>
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="RecoveryActions">
+          <Sequence name="ClearingActions">
+            <ClearEntireCostmap name="ClearLocalCostmap-Subtree" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Subtree" service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+          <BackUp backup_dist="0.15" backup_speed="0.15"/>
+          <Wait wait_duration="1"/>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

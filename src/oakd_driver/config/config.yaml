@@ -1,0 +1,80 @@
+topics:
+  detection_publisher: "/oakd/detection"
+  image_publisher: "/oakd/image"
+  sound_publisher: "/command/sound"
+  control_subscriber: "/interface/control"
+
+sounds:
+  enable: true
+  forget_time: 3.0 # s
+
+device:
+  fps: 30 # Hz
+  resolution: "auto"
+  keep_aspect_ratio: false
+  reconnect_delay: 1.0 # s
+
+model:
+  blob_path: "model/best.superblob"
+  config_path: "model/config.json"
+  shaves: 6
+  confidence_threshold: 0.8
+
+visualization:
+  enable: false
+  publish_rate: 30 # Hz
+  jpeg_quality: 80
+
+# ---------------------------------------------------------------------------
+# topics
+#   detection_publisher : detected object labels from the neural network
+#   image_publisher     : annotated camera image for RViz and rqt; a jpeg
+#                         copy is served on image_publisher + /compressed
+#                         for viewing over the network, each is only
+#                         produced while something subscribes to it
+#   sound_publisher     : sound clip requests to the sound_driver, one per
+#                         detected object label (a wav named after the label,
+#                         for example elevator.wav or door.wav)
+#   control_subscriber  : mode and authority state from the web interface,
+#                         used to only announce detections in auto mode
+#
+# sounds
+#   announce a detected object once by playing a wav named after its label;
+#   the same object is not repeated while it stays in view; only announced
+#   in auto mode, manual driving stays quiet
+#   enable      : play the detection sounds; disable to stay silent
+#   forget_time : how long a label must be gone before it is announced again;
+#                 increase to announce the same object less often, decrease to
+#                 re-announce sooner after it briefly leaves the view
+#
+# device
+#   fps               : camera and inference frame rate; increase for faster
+#                       detection updates at more USB and compute load,
+#                       decrease to lighten the camera and the Orin
+#   resolution        : sensor resolution, auto picks the device default;
+#                       higher resolutions cost more USB bandwidth
+#   keep_aspect_ratio : crop instead of stretch when resizing for the network;
+#                       true keeps shapes undistorted but loses the frame edges
+#   reconnect_delay   : wait between camera reconnect attempts; increase for
+#                       fewer retries, decrease to recover faster
+#
+# model
+#   blob_path            : compiled network file, relative to the package share
+#   config_path          : network description json, relative to the package share
+#   shaves               : compute cores used to run the network, 0 for fixed
+#                          blobs; increase for faster inference if cores are
+#                          free, decrease to leave cores for other camera work
+#   confidence_threshold : detections below this confidence are dropped;
+#                          increase for fewer false positives but more misses,
+#                          decrease to catch more objects with more noise
+#
+# visualization
+#   enable       : create the image publisher, images are only sent while
+#                  something is subscribed
+#   publish_rate : upper limit on the published image rate; increase for
+#                  smoother video at more network load, decrease to save
+#                  bandwidth and CPU
+#   jpeg_quality : quality of the compressed image topic, 0 to 100; increase
+#                  for a sharper picture at more bandwidth, decrease for a
+#                  lighter stream
+# ---------------------------------------------------------------------------
